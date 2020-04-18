@@ -1,0 +1,24 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pytest = "*"
+pytest-django = "*"
+flake8 = "*"
+isort = "*"
+
+[packages]
+django = "*"
+django-environ = "*"
+jsbeautifier = "*"
+psycopg2-binary = "*"
+celery = "*"
+django-webpack-loader = "*"
+
+[requires]
+python_version = "3.8"
+
+[scripts]
+server = "python manage.py runserver"
