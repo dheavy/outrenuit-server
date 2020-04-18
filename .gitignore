@@ -8,6 +8,7 @@ media
 # Environment variables
 .env
 .env.*
+!.env.example
 
 # Static files
 node_modules
