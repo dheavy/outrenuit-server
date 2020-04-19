@@ -17,13 +17,13 @@ class UsersManagersTests(TestCase):
         except AttributeError:
             pass
         with self.assertRaises(TypeError):
-            User.object.create_user()
+            User.objects.create_user()
         with self.assertRaises(TypeError):
             User.objects.create_user(email='')
         with self.assertRaises(ValueError):
             User.objects.create_user(email='', password='foo')
 
-    def test_create_user(self):
+    def test_create_superuser(self):
         User = get_user_model()
         admin_user = User.objects.create_superuser('super@user.com', 'foo')
         self.assertEqual(admin_user.email, 'super@user.com')
