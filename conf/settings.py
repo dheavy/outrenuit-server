@@ -69,7 +69,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.admin',
+    'apps.interpretations',
     'webpack_loader',
+    'apps.basemodel',
+    'apps.artefacts',
+    'apps.dreams',
     'apps.users'
 ]
 
