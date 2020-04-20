@@ -1,4 +1,5 @@
 from django.db import models
+from apps.users.models import User
 from apps.basemodel.models import BaseModel
 from django.utils.translation import ugettext_lazy as _
 
@@ -11,6 +12,9 @@ class Dream(BaseModel):
         PSYCHEDELIC = 'PSY', _('Psychedelic')
 
     body = models.TextField()
+    user = models.ForeignKey(User, null=True, on_delete=models.CASCADE)
+    label = models.CharField(max_length=15, blank=True)
+    registered_at = models.DateField(null=True)
     type = models.CharField(
         max_length=3,
         choices=Typology.choices,
