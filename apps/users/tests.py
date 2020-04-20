@@ -1,8 +1,12 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from apps.basemodel.models import BaseModel
 
 
 class UsersManagersTests(TestCase):
+
+    def test_is_basemodel(self):
+        self.assertTrue(BaseModel in get_user_model().__bases__)
 
     def test_create_user(self):
         User = get_user_model()
