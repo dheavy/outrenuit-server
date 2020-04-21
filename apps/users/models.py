@@ -8,7 +8,6 @@ from .managers import CustomUserManager
 
 
 class User(BaseModel, AbstractUser):
-
     username = None
     email = models.EmailField(_('email address'), unique=True)
 
@@ -25,7 +24,6 @@ class User(BaseModel, AbstractUser):
 
 
 class Profile(BaseModel):
-
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=30, blank=True)
