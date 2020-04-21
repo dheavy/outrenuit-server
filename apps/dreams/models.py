@@ -14,7 +14,7 @@ class Dream(BaseModel):
     body = models.TextField()
     user = models.ForeignKey(User, null=True, on_delete=models.CASCADE)
     label = models.CharField(max_length=15, blank=True)
-    registered_at = models.DateField(null=True)
+    transcripted_at = models.DateField(null=True)
     type = models.CharField(
         max_length=3,
         choices=Typology.choices,
