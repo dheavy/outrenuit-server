@@ -14,6 +14,12 @@ class Artefact(BaseModel):
     dream = models.OneToOneField(Dream, on_delete=models.CASCADE)
     body = models.TextField(blank=True)
     label = models.CharField(max_length=255, blank=True)
+    span = models.CharField(
+        max_length=25,
+        blank=True,
+        help_text='Two comma-separated numbers describing \
+            start/stop position in original string'
+    )
     type = models.CharField(
         max_length=3,
         choices=Typology.choices,
@@ -21,7 +27,7 @@ class Artefact(BaseModel):
     )
 
     def __str__(self):
-        return 'Artefact (id: {id}, dream: {dream}, label: {label}, type: {type})'.format(
+        return 'id: {id}, dream: {dream}, label: {label}, type: {type}'.format(
             id=self.pk,
             dream=self.dream.pk,
             label=self.label,

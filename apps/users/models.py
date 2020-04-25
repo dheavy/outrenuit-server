@@ -17,9 +17,12 @@ class User(BaseModel, AbstractUser):
     objects = CustomUserManager()
 
     def __str__(self):
-        return 'User (id: {pk}, email: {email})'.format(
+        msg = 'id: {pk}, email: {email}, staff: {staff}, admin: {admin}'
+        return msg.format(
             pk=self.pk,
-            email=self.email
+            email=self.email,
+            staff=self.is_staff,
+            admin=self.is_superuser
         )
 
 

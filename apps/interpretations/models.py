@@ -7,7 +7,7 @@ class Interpretation(BaseModel):
     body = models.TextField(blank=True)
 
     def __str__(self):
-        return 'Interpretation (id: {id}, dream: {dream})'.format(
+        return 'id: {id}, dream: {dream}'.format(
             id=self.pk,
             dream=self.dream.pk
         )

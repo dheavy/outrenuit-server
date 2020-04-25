@@ -22,7 +22,7 @@ class Dream(BaseModel):
     )
 
     def __str__(self):
-        return 'Dream (id: {pk}, type: {type})'.format(
+        return 'id: {pk}, type: {type}'.format(
             pk=self.pk,
             type=self.type
         )

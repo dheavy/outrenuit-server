@@ -1,5 +1,4 @@
 import os
-
 import environ
 
 env = environ.Env()
@@ -21,7 +20,7 @@ WSGI_APPLICATION = 'conf.wsgi.application'
 # Time & Language
 # -----------------------------------------------------------------------------
 LANGUAGE_CODE = env('LANGUAGE_CODE', default='en-us')
-TIME_ZONE = env('TIMEZONE', default='UTC')
+TIME_ZONE = env('TIME_ZONE', default='UTC')
 USE_I18N = env('USE_I18N', default=True)
 USE_L10N = env('USE_L10N', default=True)
 USE_TZ = env('USE_TZ', default=True)

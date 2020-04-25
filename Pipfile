@@ -23,4 +23,6 @@ python_version = "3.8"
 
 [scripts]
 server = "python manage.py runserver"
+shell = "python manage.py shell"
 test = "python manage.py test"
+import_corpus = "python manage.py import ../outrenuit-corpus"
