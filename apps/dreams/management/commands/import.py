@@ -6,13 +6,22 @@ from django.core.management.base import BaseCommand, CommandError
 from apps.dreams.models import Dream
 from apps.users.models import User
 from apps.artefacts.models import Artefact
+from apps.interpretations.models import Interpretation
 
+
+class MissingDreamException(Exception):
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return repr(self.value)
 
 
 class Command(BaseCommand):
     help = 'Import dreams transcripts from the corpus (https://github.com/dheavy/outrenuit-corpus/)'
+    silent = False
     MARKER_INTERPRETATION = '\n-----\n'
-    MARKER_NOTES = '\n---\n'
+    MARKER_OBSERVATIONS = '\n---\n'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -20,26 +29,127 @@ class Command(BaseCommand):
             help='Path to the transcript (.txt) directory of files'
         )
 
+        parser.add_argument(
+            '--silent',
+            help='Silences logger'
+        )
+
     def handle(self, *args, **options):
         path = options['path_to_files']
-        for label in os.listdir(path):
-            transcript_file = os.path.join(path, label)
-            if self.is_transcript(transcript_file):
-                # self.log('Reading transcript {label}'.format(label=label))
-                dream_data = self.get_dream_data(label, transcript_file)
-                slips = self.get_slips_data(dream_data['body'])
-                if slips:
-                    print(slips)
-                related = self.get_related_data(dream_data['body'])
-                dream = Dream(
-                    body=dream_data['body'],
-                    user=dream_data['user'],
-                    transcripted_at=dream_data['transcripted_at'],
-                    label=label
+        self.silent = options['silent'] == 'True'
+        files = os.listdir(path)
+        files.sort()
+        [self.process(os.path.join(path, f), f) for f in files if self.is_transcript(f)]
+
+    def process(self, transcript_file, label):
+        assert os.path.isfile(transcript_file)
+        dream_data = self.get_dream_data(label, transcript_file)
+        freudian_slips = self.get_slips_data(dream_data['body'])
+        interpretation, observations = self.get_related_data(
+            dream_data['body']
+        )
+        self.update_or_create_models(
+            dream=dream_data,
+            slips=freudian_slips,
+            observations=observations,
+            interpretation=interpretation
+        )
+
+    def log(self, label, info):
+        if not self.silent:
+            return self.stdout.write(self.style.SUCCESS(label) + ' ' + info)
+
+    def update_or_create_models(self, *args, **kwargs):
+        dream_data = kwargs.get('dream', None)
+        if dream_data is None:
+            raise MissingDreamException()
+        dream, created = Dream.objects.update_or_create(
+            body=dream_data['body'],
+            user=dream_data['user'],
+            type=dream_data['type'],
+            label=dream_data['label'],
+            transcripted_at=dream_data['transcripted_at'],
+        )
+        if created:
+            self.log('--> CREATED DREAM', '(label: "{label}", "ex: {ex}")'.format(
+                label=dream.label,
+                ex=self.excerpt(dream.body)
+            ))
+        else:
+            self.log('--> UPDATED DREAM', '(label: "{label}", "ex: {ex}")'.format(
+                label=dream.label,
+                ex=self.excerpt(dream.body)
+            ))
+
+        slips = kwargs.get('slips', None)
+        if slips:
+            for slip in slips:
+                label_start, label_end = slip['span']
+                freudian, created = Artefact.objects.update_or_create(
+                    type=Artefact.Typology.FREUDIAN_SLIP,
+                    label=slip['label'],
+                    label_start=label_start,
+                    label_end=label_end,
+                    body=slip['body'],
+                    dream=dream
+                )
+                if created:
+                    self.log(
+                        '----> CREATED ARTEFACT', '(Freudian slip, label: "{label}", "ex: {ex}")'.format(
+                            label=freudian.label,
+                            ex=self.excerpt(freudian.body)
+                        )
+                    )
+                else:
+                    self.log(
+                        '----> UPDATED ARTEFACT', '(Freudian slip, label: "{label}", "ex: {ex}")'.format(
+                            label=freudian.label,
+                            ex=self.excerpt(freudian.body)
+                        )
+                    )
+        observation = kwargs.get('observation', None)
+        if observation:
+            obs, created = Artefact.objects.update_or_create(
+                type=Artefact.Typology.OBSERVATION,
+                body=observation,
+                dream=dream
+            )
+
+            if created:
+                self.log(
+                    '----> CREATED OBSERVATION',  '(dream ID: {id}, excerpt: {ex})'.format(
+                        id=dream.id,
+                        ex=self.excerpt(obs)
+                    )
+                )
+            else:
+                self.log(
+                    '----> UPDATED OBSERVATION',  '(dream ID: {id}, excerpt: {ex})'.format(
+                        id=dream.id,
+                        ex=self.excerpt(obs)
+                    )
                 )
 
-    def log(self, msg):
-        return self.stdout.write(msg)
+        interpretation = kwargs.get('interpretation', None)
+        if interpretation:
+            interp, created = Interpretation.objects.update_or_create(
+                dream=dream,
+                body=interpretation
+            )
+            if created:
+                self.log(
+                    '----> CREATED INTERPRETATION', '(dream ID: {id})'.format(
+                        id=dream.id,
+                        ex=self.excerpt(interp.body)
+                    )
+                )
+            else:
+                self.log(
+                    '----> UPDATED INTERPRETATION', '(dream ID: {id})'.format(
+                        id=dream.id,
+                        ex=self.excerpt(interp.body)
+                    )
+                )
 
     def get_dream_data(self, label, transcript_file):
         type = Dream.Typology.SLEEP
@@ -50,14 +160,13 @@ class Command(BaseCommand):
             'type': type,
             'user': user,
             'body': body,
+            'label': label,
             'transcripted_at': transcripted_at
         }
 
     def get_slips_data(self, txt):
         if '[]' in txt:
             txt = txt.replace('[]', '[ ]')
-        # slips = re.findall('\[([^\]\[]+)\]\(([^\)]+)\)', txt)
-        # return bool(slips) and slips or None
         slips = []
         for match in re.finditer('\[([^\]\[]+)\]\(([^\)]+)\)', txt):
             group = match.group()
@@ -69,24 +178,23 @@ class Command(BaseCommand):
         return slips
 
     def get_related_data(self, txt):
-        related_data = {}
+        interpretation = None
+        observations = None
         if self.MARKER_INTERPRETATION in txt:
-            related_data['interpretation'] = self.extract_related_data(
+            interpretation = self.extract_related_data(
                 txt, self.MARKER_INTERPRETATION
             )
-        if self.MARKER_NOTES in txt:
-            related_data['notes'] = self.extract_related_data(
-                txt, self.MARKER_NOTES
+        if self.MARKER_OBSERVATIONS in txt:
+            observations = self.extract_related_data(
+                txt, self.MARKER_OBSERVATIONS
             )
-        if bool(related_data) is False:
-            return None
-        return related_data
+        return interpretation, observations
 
     def extract_related_data(self, txt, marker):
         return txt[txt.find(marker) + len(marker):].strip()
 
     def is_transcript(self, filepath):
-        return os.path.isfile(filepath) and filepath[-4:] == '.txt'
+        return filepath[-4:] == '.txt'
 
     def read_transcript(self, transcript_file):
         with open(transcript_file) as f:
@@ -106,3 +214,6 @@ class Command(BaseCommand):
             raise CommandError(
                 'User with email {email} was not found'.format(email=email)
             )
+
+    def excerpt(self, str, length=45):
+        return str.replace('\n', '')[:length] + '...'

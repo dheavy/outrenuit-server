@@ -7,23 +7,25 @@ from django.utils.translation import ugettext_lazy as _
 class Artefact(BaseModel):
 
     class Typology(models.TextChoices):
-        NOTES = 'NOT', _('Notes')
+        OBSERVATION = 'OBS', _('Observation')
         FREUDIAN_SLIP = 'FRS', _('Freudian slip')
         SYMBOLS = 'SYM', _('Symbols')
 
-    dream = models.OneToOneField(Dream, on_delete=models.CASCADE)
+    dream = models.ForeignKey(Dream, on_delete=models.CASCADE)
     body = models.TextField(blank=True)
     label = models.CharField(max_length=255, blank=True)
-    span = models.CharField(
-        max_length=25,
-        blank=True,
-        help_text='Two comma-separated numbers describing \
-            start/stop position in original string'
+    label_start = models.IntegerField(
+        default=0,
+        help_text='Start position in original string'
+    )
+    label_end = models.IntegerField(
+        default=0,
+        help_text='End position in original string'
     )
     type = models.CharField(
         max_length=3,
         choices=Typology.choices,
-        default=Typology.NOTES
+        default=Typology.OBSERVATION
     )
 
     def __str__(self):
