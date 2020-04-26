@@ -5,8 +5,8 @@ from django.utils.timezone import get_current_timezone
 from django.core.management.base import BaseCommand, CommandError
 from apps.dreams.models import Dream
 from apps.users.models import User
-from apps.artefacts.models import Artefact
 from apps.interpretations.models import Interpretation
+from apps.artefacts.models import FreudianSlip, Observation
 
 
 class MissingDreamException(Exception):
@@ -44,10 +44,8 @@ class Command(BaseCommand):
     def process(self, transcript_file, label):
         assert os.path.isfile(transcript_file)
         dream_data = self.get_dream_data(label, transcript_file)
-        freudian_slips = self.get_slips_data(dream_data['body'])
-        interpretation, observations = self.get_related_data(
-            dream_data['body']
-        )
+        freudian_slips = self.get_slips_data(dream_data['text'])
+        interpretation, observations = self.get_related_data(dream_data['text'])
         self.update_or_create_models(
             dream=dream_data,
             slips=freudian_slips,
@@ -64,69 +62,67 @@ class Command(BaseCommand):
         if dream_data is None:
             raise MissingDreamException()
         dream, created = Dream.objects.update_or_create(
-            body=dream_data['body'],
+            text=dream_data['text'],
             user=dream_data['user'],
             type=dream_data['type'],
-            label=dream_data['label'],
+            title=dream_data['title'],
             transcripted_at=dream_data['transcripted_at'],
         )
         if created:
-            self.log('--> CREATED DREAM', '(label: "{label}", "ex: {ex}")'.format(
-                label=dream.label,
-                ex=self.excerpt(dream.body)
+            self.log('--> CREATED DREAM', '(title: "{title}", "text: {ex}")'.format(
+                title=dream.title,
+                ex=dream.excerpt(dream.text)
             ))
         else:
-            self.log('--> UPDATED DREAM', '(label: "{label}", "ex: {ex}")'.format(
-                label=dream.label,
-                ex=self.excerpt(dream.body)
+            self.log('--> UPDATED DREAM', '(title: "{text}", "text: {ex}")'.format(
+                title=dream.title,
+                ex=dream.excerpt(dream.text)
             ))
 
         slips = kwargs.get('slips', None)
         if slips:
             for slip in slips:
-                label_start, label_end = slip['span']
-                freudian, created = Artefact.objects.update_or_create(
-                    type=Artefact.Typology.FREUDIAN_SLIP,
-                    label=slip['label'],
-                    label_start=label_start,
-                    label_end=label_end,
-                    body=slip['body'],
-                    dream=dream
+                snippet_start, snippet_end = slip['span']
+                freudian, created = FreudianSlip.objects.update_or_create(
+                    dream=dream,
+                    meant=slip['meant'],
+                    slipped=slip['slipped'],
+                    snippet_start=snippet_start,
+                    snippet_end=snippet_end
                 )
                 if created:
                     self.log(
-                        '----> CREATED ARTEFACT', '(Freudian slip, label: "{label}", "ex: {ex}")'.format(
-                            label=freudian.label,
-                            ex=self.excerpt(freudian.body)
+                        '----> CREATED ARTEFACT', '(Freudian slip, slipped: "{slipped}", "meant: {meant}")'.format(
+                            slipped=freudian.slipped,
+                            meant=freudian.meant
                         )
                     )
                 else:
                     self.log(
-                        '----> UPDATED ARTEFACT', '(Freudian slip, label: "{label}", "ex: {ex}")'.format(
-                            label=freudian.label,
-                            ex=self.excerpt(freudian.body)
+                        '----> UPDATED ARTEFACT', '(Freudian slip, slipped: "{slipped}", "meant: {meant}")'.format(
+                            slipped=freudian.slipped,
+                            meant=freudian.meant
                         )
                     )
         observation = kwargs.get('observation', None)
         if observation:
-            obs, created = Artefact.objects.update_or_create(
-                type=Artefact.Typology.OBSERVATION,
-                body=observation,
+            obs, created = Observation.objects.update_or_create(
+                text=observation,
                 dream=dream
             )
 
             if created:
                 self.log(
-                    '----> CREATED OBSERVATION',  '(dream ID: {id}, excerpt: {ex})'.format(
-                        id=dream.id,
-                        ex=self.excerpt(obs)
+                    '----> CREATED OBSERVATION', '(dream: {dream}, text: {text})'.format(
+                        dream=bool(dream.title) and dream.title or dream.id,
+                        ex=obs.excerpt(obs.text)
                     )
                 )
             else:
                 self.log(
-                    '----> UPDATED OBSERVATION',  '(dream ID: {id}, excerpt: {ex})'.format(
-                        id=dream.id,
-                        ex=self.excerpt(obs)
+                    '----> UPDATED OBSERVATION', '(dream: {dream}, text: {text})'.format(
+                        dream=bool(dream.title) and dream.title or dream.id,
+                        ex=obs.excerpt(obs.text)
                     )
                 )
 
@@ -134,33 +130,33 @@ class Command(BaseCommand):
         if interpretation:
             interp, created = Interpretation.objects.update_or_create(
                 dream=dream,
-                body=interpretation
+                text=interpretation
             )
             if created:
                 self.log(
-                    '----> CREATED INTERPRETATION', '(dream ID: {id})'.format(
-                        id=dream.id,
-                        ex=self.excerpt(interp.body)
+                    '----> CREATED INTERPRETATION', '(dream: {dream}, text: {text})'.format(
+                        dream=bool(dream.title),
+                        text=self.excerpt(interp.text)
                     )
                 )
             else:
                 self.log(
-                    '----> UPDATED INTERPRETATION', '(dream ID: {id})'.format(
-                        id=dream.id,
-                        ex=self.excerpt(interp.body)
+                    '----> UPDATED INTERPRETATION', '(dream: {dream}, text: {text})'.format(
+                        dream=bool(dream.title),
+                        text=self.excerpt(interp.text)
                     )
                 )
 
     def get_dream_data(self, label, transcript_file):
         type = Dream.Typology.SLEEP
         user = self.get_user('hello@davybraun.com')
-        body = self.read_transcript(transcript_file)
+        text = self.read_transcript(transcript_file)
         transcripted_at = self.get_transcription_date(label)
         return {
             'type': type,
             'user': user,
-            'body': body,
-            'label': label,
+            'text': text,
+            'title': label,
             'transcripted_at': transcripted_at
         }
 
@@ -172,8 +168,8 @@ class Command(BaseCommand):
             group = match.group()
             slips.append({
                 'span': match.span(),
-                'label': group[1:group.find(']')],
-                'body': group[group.find('(') + 1:group.find(')')]
+                'slipped': group[1:group.find(']')],
+                'meant': group[group.find('(') + 1:group.find(')')]
             })
         return slips
 
@@ -215,5 +211,5 @@ class Command(BaseCommand):
                 'User with email {email} was not found'.format(email=email)
             )
 
-    def excerpt(self, str, length=45):
-        return str.replace('\n', '')[:length] + '...'
+    def excerpt(self, string, length=45):
+        return string.replace('\n', '')[:length] + '...'

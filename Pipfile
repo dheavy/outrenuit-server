@@ -17,6 +17,7 @@ jsbeautifier = "*"
 psycopg2-binary = "*"
 celery = "*"
 django-webpack-loader = "*"
+random-username = "*"
 
 [requires]
 python_version = "3.8"

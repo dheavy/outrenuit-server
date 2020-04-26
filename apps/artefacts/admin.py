@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Artefact
+from .models import FreudianSlip, Observation
 
 
-admin.site.register(Artefact)
+admin.site.register(FreudianSlip)
+admin.site.register(Observation)

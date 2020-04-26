@@ -10,19 +10,28 @@ class Dream(BaseModel):
         SLEEP = 'SLP', _('Sleep')
         DAYDREAM = 'DDM', _('Daydream')
         PSYCHEDELIC = 'PSY', _('Psychedelic')
+        OTHER = 'OTH', _('Other')
 
-    body = models.TextField()
-    user = models.ForeignKey(User, null=True, on_delete=models.CASCADE)
-    label = models.CharField(max_length=25, blank=True)
-    transcripted_at = models.DateField(null=True)
+    text = models.TextField(verbose_name=_('dream content'), blank=True)
+    user = models.ForeignKey(User, null=True, on_delete=models.CASCADE, verbose_name=_('dreamer'))
+    title = models.CharField(max_length=25, blank=True, verbose_name=_('title or identifying label'))
+    transcripted_at = models.DateField(blank=True, null=True, verbose_name=_('transcription date'))
     type = models.CharField(
+        verbose_name=_('dream type'),
         max_length=3,
         choices=Typology.choices,
         default=Typology.SLEEP,
     )
 
     def __str__(self):
-        return 'id: {pk}, type: {type}'.format(
-            pk=self.pk,
-            type=self.type
-        )
+        return _(
+            'Dream - id: %(pk)s, user: %(user)s, type: %(type)s, title: %(title)s, ' +
+            'transcription date: %(trans)s, text: %(text)s'
+        ) % {
+            'pk': self.pk,
+            'user': bool(self.user.profile.username) and self.user.profile.username or self.user.pk,
+            'type': self.get_type_display(),
+            'title': self.title,
+            'trans': self.transcripted_at,
+            'text': self.excerpt(self.text)
+        }

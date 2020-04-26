@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
 
 
 class BaseManager(models.Manager):
@@ -13,11 +14,14 @@ class BaseManager(models.Manager):
 
 class BaseModel(models.Model):
     '''
-    Base model with timestamps and soft delete all models should inherit from.
+    Base model with timestamps, soft delete, and excerpt helper all models should inherit from.
     '''
     created_at = models.DateTimeField(editable=False, default=timezone.now)
     modified_at = models.DateTimeField(default=timezone.now)
-    soft_deleted = models.BooleanField(default=False)
+    soft_deleted = models.BooleanField(
+        default=False,
+        verbose_name=_('In the trash bin')
+    )
 
     objects = BaseManager()
 
@@ -40,3 +44,6 @@ class BaseModel(models.Model):
             self.save()
         else:
             super(BaseModel, self).delete(**kwargs)
+
+    def excerpt(self, string, length=15, ellipsis='...'):
+        return string.replace('\n', '')[:length] + ellipsis
