@@ -69,7 +69,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.admin',
     'apps.interpretations',
-    'webpack_loader',
     'apps.basemodel',
     'apps.artefacts',
     'apps.dreams',

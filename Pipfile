@@ -16,8 +16,9 @@ django-environ = "*"
 jsbeautifier = "*"
 psycopg2-binary = "*"
 celery = "*"
-django-webpack-loader = "*"
 random-username = "*"
+django-rest-framework = "*"
+django-cors-headers = "*"
 
 [requires]
 python_version = "3.8"

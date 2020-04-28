@@ -12,3 +12,6 @@ media
 
 # Static files
 node_modules
+
+# Others
+.vscode
