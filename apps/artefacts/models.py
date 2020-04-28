@@ -5,7 +5,12 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class FreudianSlip(BaseModel):
-    dream = models.ForeignKey(Dream, verbose_name=_('dream'), on_delete=models.CASCADE)
+    dream = models.ForeignKey(
+        Dream,
+        related_name='slips',
+        verbose_name=_('dream'),
+        on_delete=models.CASCADE
+    )
     meant = models.CharField(max_length=255, blank=True, verbose_name=_('what was meant'))
     slipped = models.CharField(max_length=255, blank=True, verbose_name=_('slipped'))
     snippet_start = models.IntegerField(
@@ -29,7 +34,11 @@ class FreudianSlip(BaseModel):
 
 
 class Observation(BaseModel):
-    dream = models.ForeignKey(Dream, on_delete=models.CASCADE)
+    dream = models.ForeignKey(
+        Dream,
+        related_name='observations',
+        on_delete=models.CASCADE
+    )
     text = models.TextField(blank=True)
     snippet_start = models.IntegerField(
         default=0,

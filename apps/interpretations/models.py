@@ -1,11 +1,25 @@
 from django.db import models
 from apps.basemodel.models import BaseModel
 from apps.dreams.models import Dream
+from apps.users.models import User
 from django.utils.translation import ugettext_lazy as _
 
 
 class Interpretation(BaseModel):
-    dream = models.OneToOneField(Dream, verbose_name=_('dream'), on_delete=models.CASCADE)
+    dream = models.ForeignKey(
+        Dream,
+        null=True,
+        related_name='interpretations',
+        verbose_name=_('dream'),
+        on_delete=models.CASCADE
+    )
+    interpreter = models.ForeignKey(
+        User,
+        null=True,
+        related_name='interpreter',
+        verbose_name=_('interpreter'),
+        on_delete=models.CASCADE
+    )
     text = models.TextField(verbose_name=_('interpretation'), blank=True)
 
     def __str__(self):

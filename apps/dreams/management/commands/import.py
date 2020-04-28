@@ -63,7 +63,7 @@ class Command(BaseCommand):
             raise MissingDreamException()
         dream, created = Dream.objects.update_or_create(
             text=dream_data['text'],
-            user=dream_data['user'],
+            dreamer=dream_data['dreamer'],
             type=dream_data['type'],
             title=dream_data['title'],
             transcripted_at=dream_data['transcripted_at'],
@@ -130,7 +130,8 @@ class Command(BaseCommand):
         if interpretation:
             interp, created = Interpretation.objects.update_or_create(
                 dream=dream,
-                text=interpretation
+                text=interpretation,
+                interpreter=dream.dreamer
             )
             if created:
                 self.log(
@@ -154,7 +155,7 @@ class Command(BaseCommand):
         transcripted_at = self.get_transcription_date(label)
         return {
             'type': type,
-            'user': user,
+            'dreamer': user,
             'text': text,
             'title': label,
             'transcripted_at': transcripted_at

@@ -1,3 +1,14 @@
-from django.shortcuts import render
+from rest_framework import viewsets
+from .models import Dream
+from .serializers import DreamSerializer
 
-# Create your views here.
+
+class DreamViewSet(viewsets.ModelViewSet):
+    serializer_class = DreamSerializer
+    queryset = Dream.objects.prefetch_related(
+        'interpretations'
+    ).prefetch_related(
+        'observations'
+    ).prefetch_related(
+        'slips'
+    ).all()
